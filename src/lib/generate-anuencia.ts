@@ -2,7 +2,8 @@ import FileSaver from "file-saver";
 import { PDFDocument, StandardFonts } from "pdf-lib";
 import { safeFlatten } from "./pdf-safe-flatten";
 import { repairAcroForm } from "./pdf-repair-acroform";
-import templateAsset from "@/assets/carta-anuencia-modelo.pdf.asset.json";
+// Arquivo servido de public/templates (funciona na Lovable e na Vercel).
+const TEMPLATE_URL = "/templates/carta-anuencia-modelo.pdf";
 import type { Colaborador } from "./certificate-template";
 import { safeFileName } from "./generate-pptx";
 import { fetchTemplateBuffer } from "./template-fetch";
@@ -91,7 +92,7 @@ async function loadTemplateBytes(): Promise<ArrayBuffer> {
       "o modelo local da carta de anuência",
     );
   } catch {
-    return fetchTemplateBuffer(templateAsset.url, "o modelo da carta de anuência");
+    return fetchTemplateBuffer(TEMPLATE_URL, "o modelo da carta de anuência");
   }
 }
 

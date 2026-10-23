@@ -2,7 +2,8 @@ import FileSaver from "file-saver";
 import { PDFDocument, StandardFonts } from "pdf-lib";
 import { safeFlatten } from "./pdf-safe-flatten";
 import { repairAcroForm } from "./pdf-repair-acroform";
-import templateAsset from "@/assets/regras-de-ouro-modelo.pdf.asset.json";
+// Arquivo servido de public/templates (funciona na Lovable e na Vercel).
+const TEMPLATE_URL = "/templates/regras-de-ouro-modelo.pdf";
 import type { Colaborador } from "./certificate-template";
 import { safeFileName } from "./generate-pptx";
 import { fetchTemplateBuffer } from "./template-fetch";
@@ -64,7 +65,7 @@ async function loadTemplateBytes(): Promise<ArrayBuffer> {
       "o modelo local do Termo de Regras de Ouro",
     );
   } catch {
-    return fetchTemplateBuffer(templateAsset.url, "o modelo do Termo de Regras de Ouro");
+    return fetchTemplateBuffer(TEMPLATE_URL, "o modelo do Termo de Regras de Ouro");
   }
 }
 
