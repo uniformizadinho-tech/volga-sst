@@ -29,7 +29,7 @@ Quem clica em **Solicitar acesso** cria o login, mas entra **sem perfil** e vê 
 "Aguardando liberação". Um administrador libera em **Administração › Usuários**, escolhendo o
 perfil na linha marcada como "Aguardando liberação".
 
-Para isso funcionar no banco, aplique `supabase/migrations/0012_cadastro_com_aprovacao.sql`
+As migrations 0012–0015 já foram aplicadas no Supabase de produção (23/10/2026). Para um banco novo, aplique `supabase/migrations/0012_cadastro_com_aprovacao.sql` e as seguintes
 no SQL Editor do Supabase (o arquivo explica como conferir e como desfazer). Se preferir que
 ninguém consiga nem pedir acesso, desligue também o cadastro em
 *Supabase › Authentication › Sign In / Providers › Allow new users to sign up* e convide as
