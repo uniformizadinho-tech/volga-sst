@@ -1,3 +1,4 @@
+import { confirmar } from "./confirm-dialog";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -57,7 +58,10 @@ export function BatchToolbar<T extends BatchActionItem>({
   if (selectedIds.size === 0) return null;
 
   const handleAction = async (action: BatchActionConfig) => {
-    if (action.requiresConfirm && !confirm(action.confirmMessage || "Tem certeza?")) {
+    if (
+      action.requiresConfirm &&
+      !(await confirmar({ titulo: action.confirmMessage || "Tem certeza?", perigo: true }))
+    ) {
       return;
     }
 

@@ -1,5 +1,14 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import {
+  lazy,
+  Suspense,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import { ArrowRight, CheckCircle2, RefreshCw } from "lucide-react";
 
 import { AppFrame } from "@/components/layout/app-frame";
@@ -10,9 +19,25 @@ import { resumirInspecoesPainel } from "@/lib/inspecoes-dashboard";
 import { loadTrainingState, type TrainingSnapshot } from "@/lib/training-store";
 import { resumirMatrizTreinamentos } from "@/lib/training-matrix";
 import { useAuth } from "@/hooks/use-auth";
-import { AnelConformidade, CalendarioReciclagem } from "@/components/painel/graficos-validades";
-import { OcupacaoVestiarioChart } from "@/components/painel/graficos-armarios";
-import { formatarHoras, RitmoContagemChart } from "@/components/painel/graficos-estoque";
+import { formatarHoras } from "@/lib/formatar-horas";
+
+// Gráficos (biblioteca pesada) só são baixados quando a seção de indicadores é aberta.
+const AnelConformidade = lazy(() =>
+  import("@/components/painel/graficos-validades").then((m) => ({ default: m.AnelConformidade })),
+);
+const CalendarioReciclagem = lazy(() =>
+  import("@/components/painel/graficos-validades").then((m) => ({
+    default: m.CalendarioReciclagem,
+  })),
+);
+const OcupacaoVestiarioChart = lazy(() =>
+  import("@/components/painel/graficos-armarios").then((m) => ({
+    default: m.OcupacaoVestiarioChart,
+  })),
+);
+const RitmoContagemChart = lazy(() =>
+  import("@/components/painel/graficos-estoque").then((m) => ({ default: m.RitmoContagemChart })),
+);
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { loadHistory } from "@/lib/history-store";
@@ -160,6 +185,7 @@ function MenuPage() {
   const [trainingSnapshot, setTrainingSnapshot] = useState<TrainingSnapshot | null>(null);
   const [trainingLoading, setTrainingLoading] = useState(true);
   const [trainingError, setTrainingError] = useState("");
+  const [detalhesAbertos, setDetalhesAbertos] = useState(false);
   const [indicador, setIndicador] = useState<"treinamentos" | "armarios" | "estoque">(
     "treinamentos",
   );
@@ -612,7 +638,10 @@ function MenuPage() {
           </div>
         </div>
 
-        <details className="sst-advanced">
+        <details
+          className="sst-advanced"
+          onToggle={(e) => setDetalhesAbertos((e.currentTarget as HTMLDetailsElement).open)}
+        >
           <summary>
             Indicadores detalhados <span>Abrir</span>
             <ArrowRight size={17} />
@@ -631,7 +660,7 @@ function MenuPage() {
             onRetry={refreshTraining}
           />
 
-          {painel && (
+          {painel && detalhesAbertos && (
             <section className="sst-home-section mt-8" aria-labelledby="charts-heading">
               <div className="sst-home-section-title">
                 <div>
@@ -659,29 +688,39 @@ function MenuPage() {
                   ))}
                 </div>
               </div>
-              <div className="grid gap-4 lg:grid-cols-3">
-                {indicador === "treinamentos" && (
-                  <>
-                    <AnelConformidade
-                      resumo={painel.validades.resumo}
-                      onSelecionar={(status) => navigate({ to: "/validades", search: { status } })}
-                    />
-                    <CalendarioReciclagem
-                      className="lg:col-span-2"
-                      projecao={painel.validades.projecao}
-                      onSelecionarMes={(mes) =>
-                        mes && navigate({ to: "/validades", search: { mes } })
-                      }
-                    />
-                  </>
-                )}
-                {indicador === "armarios" && (
-                  <OcupacaoVestiarioChart dados={painel.armarios.porVestiario} />
-                )}
-                {indicador === "estoque" && (
-                  <RitmoContagemChart className="lg:col-span-3" ritmo={painel.estoque.ritmo} />
-                )}
-              </div>
+              <Suspense
+                fallback={
+                  <p className="text-sm text-muted-foreground" role="status">
+                    Carregando gráficos…
+                  </p>
+                }
+              >
+                <div className="grid gap-4 lg:grid-cols-3">
+                  {indicador === "treinamentos" && (
+                    <>
+                      <AnelConformidade
+                        resumo={painel.validades.resumo}
+                        onSelecionar={(status) =>
+                          navigate({ to: "/validades", search: { status } })
+                        }
+                      />
+                      <CalendarioReciclagem
+                        className="lg:col-span-2"
+                        projecao={painel.validades.projecao}
+                        onSelecionarMes={(mes) =>
+                          mes && navigate({ to: "/validades", search: { mes } })
+                        }
+                      />
+                    </>
+                  )}
+                  {indicador === "armarios" && (
+                    <OcupacaoVestiarioChart dados={painel.armarios.porVestiario} />
+                  )}
+                  {indicador === "estoque" && (
+                    <RitmoContagemChart className="lg:col-span-3" ritmo={painel.estoque.ritmo} />
+                  )}
+                </div>
+              </Suspense>
             </section>
           )}
         </details>

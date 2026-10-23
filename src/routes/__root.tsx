@@ -12,6 +12,7 @@ import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { AuthProvider } from "@/hooks/use-auth";
+import { ConfirmHost } from "@/components/ui-patterns/confirm-dialog";
 import { AppAccessGate } from "@/components/auth/app-access-gate";
 import { Toaster } from "@/components/ui/sonner";
 import { Button } from "@/components/ui/button";
@@ -143,6 +144,7 @@ function RootComponent() {
           <Outlet />
         </AppAccessGate>
         <Toaster richColors position="top-center" />
+        <ConfirmHost />
       </AuthProvider>
     </QueryClientProvider>
   );

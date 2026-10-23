@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
 import { formatSignatureName } from "@/lib/certificate-template";
 import type { Colaborador, SharedFields } from "@/lib/certificate-template";
 import { normalizeCollaboratorIdentity } from "@/lib/collaborator-preparation";
-import logoAsset from "@/assets/volga-logo.png.asset.json";
+import { VolgaLogo } from "@/components/brand/volga-logo";
 
 /**
  * Peças de apresentação da tela de Certificados, extraídas de
@@ -282,11 +282,9 @@ export function CertificatePreview({ shared, col }: { shared: SharedFields; col:
 
   return (
     <div className="sst-document-preview">
-      <img
-        src={logoAsset.url}
-        alt=""
-        aria-hidden
-        className="pointer-events-none absolute left-1/2 top-[55%] w-[60%] -translate-x-1/2 -translate-y-1/2 opacity-[0.08] grayscale"
+      <VolgaLogo
+        decorative
+        className="volga-watermark pointer-events-none absolute left-1/2 top-[55%] w-[60%] -translate-x-1/2 -translate-y-1/2 text-center opacity-[0.08] grayscale"
       />
 
       <div className="relative h-[24%] w-full">
@@ -322,7 +320,7 @@ export function CertificatePreview({ shared, col }: { shared: SharedFields; col:
             Reg: {shared.instrutorRegistro}
           </div>
         </div>
-        <img src={logoAsset.url} alt="Volga" className="h-10 w-full object-contain" />
+        <VolgaLogo className="volga-doc-logo h-10 w-full object-contain text-center" />
       </div>
     </div>
   );

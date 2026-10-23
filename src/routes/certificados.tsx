@@ -11,6 +11,7 @@ import { useInstructors } from "@/hooks/use-instructors";
 import { useTemplateManagement } from "@/hooks/use-template-management";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
+import { confirmar } from "@/components/ui-patterns/confirm-dialog";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
@@ -96,24 +97,19 @@ import {
   type SharedFields,
 } from "@/lib/certificate-template";
 import {
-  generatePptx,
-  generateBatchPptx,
+  ANUENCIA_NR_LABELS,
+  anuenciaFromColaboradores,
+  CHUNK_SIZE,
   GenerationAbortedError,
   MAX_COLABORADORES,
-  CHUNK_SIZE,
-} from "@/lib/generate-pptx";
-
-import {
-  anuenciaFromColaboradores,
-  generateAnuenciaDocx,
-  ANUENCIA_NR_LABELS,
-  type AnuenciaNr,
-} from "@/lib/generate-anuencia";
-
-import {
   regrasDeOuroFromColaboradores,
-  generateRegrasDeOuroPdf,
-} from "@/lib/generate-regras-de-ouro";
+  type AnuenciaNr,
+} from "@/lib/certificados-dados";
+
+// Geradores de PowerPoint/PDF são pesados: só são baixados quando alguém gera um documento.
+const carregarGeradorPptx = () => import("@/lib/generate-pptx");
+const carregarGeradorAnuencia = () => import("@/lib/generate-anuencia");
+const carregarGeradorRegrasDeOuro = () => import("@/lib/generate-regras-de-ouro");
 
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -454,13 +450,20 @@ function CertificadosPage() {
       }),
     [],
   );
-  const clearEmpty = () => {
+  const clearEmpty = async () => {
     const emptyCount = cols.filter((c) => !c.nome.trim() && !c.cpf.trim()).length;
     if (!emptyCount) {
       toast.info("Nenhuma linha vazia para remover");
       return;
     }
-    if (!window.confirm(`Remover ${emptyCount} linha(s) vazia(s)?`)) return;
+    if (
+      !(await confirmar({
+        titulo: `Remover ${emptyCount} linha(s) vazia(s)?`,
+        descricao: "Só as linhas sem nome e sem CPF saem da lista.",
+        confirmar: "Remover linhas",
+      }))
+    )
+      return;
     setCols((prev) => {
       const kept = prev.filter((c) => c.nome.trim() || c.cpf.trim());
       return kept.length ? kept : [{ nome: "", cpf: "" }];
@@ -552,12 +555,15 @@ function CertificadosPage() {
   const selectAllVisible = () => setSelected(new Set(visibleIdxs));
   const clearSelection = () => setSelected(new Set());
 
-  const bulkDelete = () => {
+  const bulkDelete = async () => {
     if (!selected.size) return;
     if (
-      !window.confirm(
-        `Excluir ${selected.size} colaborador(es) da lista? Esta ação não pode ser desfeita.`,
-      )
+      !(await confirmar({
+        titulo: `Excluir ${selected.size} colaborador(es) da lista?`,
+        descricao: "Esta ação não pode ser desfeita.",
+        confirmar: "Excluir",
+        perigo: true,
+      }))
     )
       return;
     const kept = cols.filter((_, i) => !selected.has(i));
@@ -701,6 +707,7 @@ function CertificadosPage() {
     const controller = new AbortController();
     abortRef.current = controller;
     try {
+      const { generatePptx } = await carregarGeradorPptx();
       const result = await generatePptx(shared, cols, "certificados-volga.pptx", {
         singlePptx: downloadMode === "merged",
         perPerson: downloadMode === "per-person",
@@ -788,6 +795,7 @@ function CertificadosPage() {
     generationLockRef.current = true;
     setLoading(true);
     try {
+      const { generatePptx } = await carregarGeradorPptx();
       await generatePptx(normalizeShared(h.shared), h.cols);
       toast.success("PPTX gerado");
     } catch (e) {
@@ -862,6 +870,7 @@ function CertificadosPage() {
         cols,
         name: t.name,
       }));
+      const { generateBatchPptx } = await carregarGeradorPptx();
       const res = await generateBatchPptx(
         withCurrentDate,
         `certificados-volga-lote-${format(new Date(), "yyyy-MM-dd")}.pptx`,
@@ -999,11 +1008,19 @@ function CertificadosPage() {
         semCpf ? `${semCpf} sem CPF` : "",
         cpfInvalido ? `${cpfInvalido} com CPF inválido` : "",
       ].filter(Boolean);
-      if (!window.confirm(`Atenção: ${partes.join(" e ")}. Gerar mesmo assim?`)) return;
+      if (
+        !(await confirmar({
+          titulo: "Gerar mesmo assim?",
+          descricao: `Atenção: ${partes.join(" e ")}. Esses documentos sairão com o CPF em branco ou incorreto.`,
+          confirmar: "Gerar mesmo assim",
+        }))
+      )
+        return;
     }
     generationLockRef.current = true;
     setAnuenciaLoading(true);
     try {
+      const { generateAnuenciaDocx } = await carregarGeradorAnuencia();
       const { count } = await generateAnuenciaDocx(
         entries,
         { nrs: anuenciaNrs, data: anuenciaData },
@@ -1061,11 +1078,19 @@ function CertificadosPage() {
         semCpf ? `${semCpf} sem CPF` : "",
         cpfInvalido ? `${cpfInvalido} com CPF inválido` : "",
       ].filter(Boolean);
-      if (!window.confirm(`Atenção: ${partes.join(" e ")}. Gerar mesmo assim?`)) return;
+      if (
+        !(await confirmar({
+          titulo: "Gerar mesmo assim?",
+          descricao: `Atenção: ${partes.join(" e ")}. Esses documentos sairão com o CPF em branco ou incorreto.`,
+          confirmar: "Gerar mesmo assim",
+        }))
+      )
+        return;
     }
     generationLockRef.current = true;
     setRegrasLoading(true);
     try {
+      const { generateRegrasDeOuroPdf } = await carregarGeradorRegrasDeOuro();
       const { count } = await generateRegrasDeOuroPdf(
         entries,
         { data: regrasData, cidade: regrasCidade },

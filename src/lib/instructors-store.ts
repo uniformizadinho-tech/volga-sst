@@ -4,7 +4,8 @@ import {
   stripBuiltInInstructors,
   withBuiltInInstructors,
 } from "./builtin-instructors";
-import { pushShared } from "./shared-kv";
+import { toast } from "sonner";
+import { updateSharedWithRetry } from "./shared-kv";
 
 export { isBuiltInInstructorId } from "./builtin-instructors";
 
@@ -33,12 +34,68 @@ function loadHiddenBuiltIns(): string[] {
   }
 }
 
+function parseArray<T>(raw: string | null): T[] {
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw) as unknown;
+    return Array.isArray(parsed) ? (parsed as T[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+let avisouFalha = false;
+function avisarFalhaNuvem(err: unknown): void {
+  console.error("Instrutores: alteração salva neste navegador, mas não na nuvem.", err);
+  if (avisouFalha) return;
+  avisouFalha = true;
+  toast.warning(
+    "Instrutores salvos neste navegador, mas não sincronizados com a equipe. Verifique a conexão.",
+  );
+}
+
+/**
+ * Aplica as mudanças deste navegador sobre a versão da nuvem, em vez de substituí-la:
+ * quem editou cada instrutor por último prevalece e exclusões são respeitadas.
+ */
+export function mesclarInstrutores(
+  remoto: SavedInstructor[],
+  local: SavedInstructor[],
+  excluidos: Set<string>,
+): SavedInstructor[] {
+  const porId = new Map(remoto.map((i) => [i.id, i]));
+  for (const inst of local) {
+    const atual = porId.get(inst.id);
+    if (!atual || (inst.updatedAt ?? 0) >= (atual.updatedAt ?? 0)) porId.set(inst.id, inst);
+  }
+  for (const id of excluidos) porId.delete(id);
+  return [...porId.values()];
+}
+
+/** Ocultos = conjunto: aplica só o que foi adicionado/removido neste navegador. */
+export function mesclarOcultos(
+  remoto: string[],
+  adicionados: string[],
+  removidos: string[],
+): string[] {
+  const set = new Set(remoto);
+  adicionados.forEach((id) => set.add(id));
+  removidos.forEach((id) => set.delete(id));
+  return [...set];
+}
+
 function saveHiddenBuiltIns(ids: string[]): void {
   if (typeof window === "undefined") return;
   try {
-    const v = JSON.stringify(ids);
-    window.localStorage.setItem(HIDDEN_KEY, v);
-    void pushShared(HIDDEN_KEY, v);
+    const antes = new Set(parseArray<string>(window.localStorage.getItem(HIDDEN_KEY)));
+    const depois = new Set(ids);
+    const adicionados = ids.filter((id) => !antes.has(id));
+    const removidos = [...antes].filter((id) => !depois.has(id));
+    window.localStorage.setItem(HIDDEN_KEY, JSON.stringify(ids));
+    if (!adicionados.length && !removidos.length) return;
+    updateSharedWithRetry(HIDDEN_KEY, (remoto) =>
+      JSON.stringify(mesclarOcultos(parseArray<string>(remoto), adicionados, removidos)),
+    ).catch(avisarFalhaNuvem);
   } catch (err) {
     console.error("Falha ao salvar instrutores ocultos:", err);
   }
@@ -72,9 +129,14 @@ export function saveInstructors(list: SavedInstructor[]): boolean {
     const hidden = BUILTIN_INSTRUCTORS.filter((b) => !presentBuiltInIds.has(b.id)).map((b) => b.id);
     saveHiddenBuiltIns(hidden);
 
-    const v = JSON.stringify(stripBuiltInInstructors(list));
-    window.localStorage.setItem(KEY, v);
-    void pushShared(KEY, v);
+    const proprios = stripBuiltInInstructors(list);
+    const anteriores = parseArray<SavedInstructor>(window.localStorage.getItem(KEY));
+    const idsAgora = new Set(proprios.map((i) => i.id));
+    const excluidos = new Set(anteriores.map((i) => i.id).filter((id) => !idsAgora.has(id)));
+    window.localStorage.setItem(KEY, JSON.stringify(proprios));
+    updateSharedWithRetry(KEY, (remoto) =>
+      JSON.stringify(mesclarInstrutores(parseArray<SavedInstructor>(remoto), proprios, excluidos)),
+    ).catch(avisarFalhaNuvem);
     return true;
   } catch (err) {
     console.error("Falha ao salvar instrutores no localStorage:", err);

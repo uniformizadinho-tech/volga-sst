@@ -24,8 +24,8 @@ import { normalizeCollaboratorIdentity } from "./collaborator-preparation";
 import { replaceDatesInSlideXml } from "./pptx-dates";
 import { normalizeCertificateTypography } from "./certificate-typography";
 
-export const MAX_COLABORADORES = 300;
-export const CHUNK_SIZE = SLOTS.length;
+import { CHUNK_SIZE, GenerationAbortedError, MAX_COLABORADORES } from "./certificados-dados";
+export { CHUNK_SIZE, GenerationAbortedError, MAX_COLABORADORES };
 const ORIG_SLIDE_COUNT = 10;
 
 /**
@@ -1566,13 +1566,6 @@ export interface BatchOptions {
   onCurrent?: (model: string, person: string, block: number) => void;
   /** Cancelamento cooperativo. */
   signal?: AbortSignal;
-}
-
-export class GenerationAbortedError extends Error {
-  constructor() {
-    super("Geração cancelada");
-    this.name = "GenerationAbortedError";
-  }
 }
 
 export function throwIfAborted(signal?: AbortSignal): void {

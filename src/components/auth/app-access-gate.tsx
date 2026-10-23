@@ -6,7 +6,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import factoryImage from "@/assets/volga-factory.jpg";
-import volgaLogo from "@/assets/volga-logo.png.asset.json";
+import { VolgaLogo } from "@/components/brand/volga-logo";
 import { Label } from "@/components/ui/label";
 
 /** Global application gate. No module and no cached data renders before status === "ready". */
@@ -221,7 +221,7 @@ function Shell({ children }: { children: ReactNode }) {
         alt="Ambiente industrial organizado"
       />
       <div className="sst-access-brand">
-        <img src={volgaLogo.url} alt="Volga" width={140} height={46} />
+        <VolgaLogo width={140} height={46} />
         <span className="sst-brand-product">SST</span>
       </div>
       <section className="sst-access-card">

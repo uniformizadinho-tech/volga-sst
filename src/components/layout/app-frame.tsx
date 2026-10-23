@@ -20,7 +20,7 @@ import {
 import { useEffect, useState, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import volgaLogo from "@/assets/volga-logo.png.asset.json";
+import { VolgaLogo } from "@/components/brand/volga-logo";
 import { useAuth } from "@/hooks/use-auth";
 import { can } from "@/lib/permissions";
 import { flushPendingAudit, pendingAuditEvents } from "@/lib/operation-audit";
@@ -115,7 +115,7 @@ export function AppFrame({
     <div className={`sst-frame min-h-screen text-foreground ${menuOpen ? "sst-menu-open" : ""}`}>
       <aside className="sst-sidebar" aria-label="Navegação principal">
         <Link to="/" className="sst-brand" aria-label="Volga SST — início">
-          <img className="sst-brand-logo" src={volgaLogo.url} alt="Volga" width={120} height={40} />
+          <VolgaLogo className="sst-brand-logo" width={120} height={36} />
           <span className="sst-brand-product">SST</span>
         </Link>
         <div className="sst-module-search">

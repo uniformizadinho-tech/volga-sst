@@ -6,7 +6,11 @@ import {
   type SavedInstructor,
 } from "./instructors-store";
 
-vi.mock("./shared-kv", () => ({ pushShared: vi.fn().mockResolvedValue(undefined) }));
+vi.mock("./shared-kv", () => ({
+  pushShared: vi.fn().mockResolvedValue(undefined),
+  updateSharedWithRetry: vi.fn().mockResolvedValue("[]"),
+}));
+vi.mock("sonner", () => ({ toast: { warning: vi.fn() } }));
 
 const instructor: SavedInstructor = {
   id: "inst_test",
@@ -57,5 +61,43 @@ describe("predefinições de instrutores", () => {
     });
     vi.spyOn(console, "error").mockImplementation(() => undefined);
     expect(saveInstructors([instructor])).toBe(false);
+  });
+});
+
+describe("mescla de instrutores com a equipe", () => {
+  const inst = (id: string, nome: string, updatedAt: number) => ({
+    id,
+    name: nome,
+    nome,
+    cargo: "Téc.",
+    registro: "1",
+    updatedAt,
+  });
+
+  it("mantém instrutores que outra pessoa cadastrou", async () => {
+    const { mesclarInstrutores } = await import("./instructors-store");
+    const out = mesclarInstrutores([inst("a", "Colega", 5)], [inst("b", "Meu", 6)], new Set());
+    expect(out.map((i) => i.id).sort()).toEqual(["a", "b"]);
+  });
+
+  it("a edição mais recente prevalece", async () => {
+    const { mesclarInstrutores } = await import("./instructors-store");
+    const out = mesclarInstrutores(
+      [inst("a", "Novo nome", 10)],
+      [inst("a", "Antigo", 3)],
+      new Set(),
+    );
+    expect(out[0]?.nome).toBe("Novo nome");
+  });
+
+  it("respeita exclusões feitas neste navegador", async () => {
+    const { mesclarInstrutores } = await import("./instructors-store");
+    const out = mesclarInstrutores([inst("a", "X", 1), inst("b", "Y", 1)], [], new Set(["a"]));
+    expect(out.map((i) => i.id)).toEqual(["b"]);
+  });
+
+  it("ocultos: aplica só o que mudou", async () => {
+    const { mesclarOcultos } = await import("./instructors-store");
+    expect(mesclarOcultos(["x", "y"], ["z"], ["x"]).sort()).toEqual(["y", "z"]);
   });
 });

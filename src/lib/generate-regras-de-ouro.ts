@@ -10,10 +10,8 @@ import { fetchTemplateBuffer } from "./template-fetch";
 
 const { saveAs } = FileSaver;
 
-export interface RegraDeOuroSelection {
-  cpf: string;
-  nome: string;
-}
+import { regrasDeOuroFromColaboradores, type RegraDeOuroSelection } from "./certificados-dados";
+export { regrasDeOuroFromColaboradores, type RegraDeOuroSelection };
 
 export interface RegraDeOuroOptions {
   cidade?: string;
@@ -129,13 +127,4 @@ export async function generateRegrasDeOuroPdf(
   const blob = new Blob([bytes as unknown as ArrayBuffer], { type: "application/pdf" });
   saveAs(blob, safeFileName(fileName.replace(/\.pdf$/i, "")) + ".pdf");
   return { count };
-}
-
-export function regrasDeOuroFromColaboradores(cols: Colaborador[]): RegraDeOuroSelection[] {
-  return cols
-    .map((c) => ({
-      cpf: c.cpf.trim(),
-      nome: c.nome.trim(),
-    }))
-    .filter((e) => e.nome);
 }

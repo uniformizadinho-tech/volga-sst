@@ -1,3 +1,4 @@
+import { confirmar } from "@/components/ui-patterns/confirm-dialog";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -310,10 +311,12 @@ function TrainingPage() {
     }
     const total = snapshot.state.records.length;
     if (
-      !window.confirm(
-        `Apagar definitivamente os ${total} registros importados da Matriz? ` +
-          "Isso remove os dados de todos os usuários e não pode ser desfeito.",
-      )
+      !(await confirmar({
+        titulo: `Apagar os ${total} registros importados da Matriz?`,
+        descricao: "Isso remove os dados de todos os usuários e não pode ser desfeito.",
+        confirmar: "Apagar registros",
+        perigo: true,
+      }))
     )
       return;
     setBusy(true);

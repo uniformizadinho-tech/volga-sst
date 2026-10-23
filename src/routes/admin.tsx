@@ -1,3 +1,4 @@
+import { confirmar } from "@/components/ui-patterns/confirm-dialog";
 import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
@@ -134,9 +135,11 @@ function AdminPage() {
   async function changeRole(account: Account, nextRole: UserRole) {
     if (!supabase || nextRole === account.papel || saving) return;
     if (
-      !window.confirm(
-        `Alterar o perfil de ${account.email ?? "usuário"} para ${roles.find((r) => r.value === nextRole)?.label}?`,
-      )
+      !(await confirmar({
+        titulo: `Alterar o perfil de ${account.email ?? "usuário"}?`,
+        descricao: `O novo perfil será "${roles.find((r) => r.value === nextRole)?.label}". A pessoa passa a ter esse acesso no próximo login.`,
+        confirmar: "Alterar perfil",
+      }))
     )
       return;
     setSaving(account.id);

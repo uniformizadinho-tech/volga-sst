@@ -32,14 +32,8 @@ import type { EstoqueItem, EstoqueLancamento } from "@/lib/estoque-store";
 const brl = (v: number) =>
   v.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
 
-export function formatarHoras(h: number | null): string {
-  if (h === null) return "—";
-  if (h === 0) return "concluída";
-  if (h < 1) return `~${Math.max(1, Math.round(h * 60))} min`;
-  const horas = Math.floor(h);
-  const min = Math.round((h - horas) * 60);
-  return `~${horas}h${min ? String(min).padStart(2, "0") : ""}`;
-}
+import { formatarHoras } from "@/lib/formatar-horas";
+export { formatarHoras };
 
 const configRitmo = {
   coberturaPct: { label: "Cobertura", color: "var(--accent)" },
